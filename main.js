@@ -265,19 +265,11 @@ var stores =
 
 map.on('load', function(e) {
   // Add the data to your map as a layer
-  map.addLayer({
-    id: 'locations',
-    type: 'symbol',
-    // Add a GeoJSON source containing place coordinates and information.
-    source: {
-      type: 'geojson',
-      data: stores
-    },
-    layout: {
-      'icon-image': 'restaurant-15',
-      'icon-allow-overlap': true,
-    }
-  });
+  map.addSource('places', {
+   type: 'geojson',
+   data: stores
+ });
+
   buildLocationList(stores);
 });
 
@@ -350,50 +342,33 @@ function createPopUp(currentFeature) {
   .addTo(map);
 }
 
-
-// Add an event listener for the links in the sidebar listing
-
-/*link.addEventListener('click', function(e) {
-  // Update the currentFeature to the store associated with the clicked link
-  var clickedListing = data.features[this.dataPosition];
-  // 1. Fly to the point associated with the clicked link
-  flyToStore(clickedListing);
-  // 2. Close all other popups and display popup for clicked store
-  createPopUp(clickedListing);
-  // 3. Highlight listing in sidebar (and remove highlight for all other listings)
-  var activeItem = document.getElementByClassName('active');
-  if(activeItem[0]) {
-    activeItem[0].classList.remove('active');
-  }
-  this.parentNode.classList.add('active');
-});*/
-
 //// Add an event listener for when a user clicks on the map
 
-map.on('click', function(e) {
-  // Query all the rendered points in the view
-  var features = map.queryRenderedFeatures(e.point,{layers: ['locations']});
-  if(features.length) {
-    var clickedPoint = features[0];
-    // 1. Fly to the point
-    flyToStore(clickedPoint);
-    // 2. Close all other popups and display popup for clicked store
-    createPopUp(clickedPoint);
-    // 3. Highlight listing in sidebar (and remove highlight for all other listings)
+stores.features.forEach(function(marker) {
+  // Create a div element for the marker
+  var el = document.createElement('div');
+  // Add a class called 'marker' to each div
+  el.className = 'marker';
+  // By default the image for your custom marker will be anchored
+  // by its center. Adjust the position accordingly
+  // Create the custom markers, set their position, and add to map
+  new mapboxgl.Marker(el, { offset: [0, -23] })
+    .setLngLat(marker.geometry.coordinates)
+    .addTo(map);
+    el.addEventListener('click', function(e) {
     var activeItem = document.getElementsByClassName('active');
-    if(activeItem[0]) {
+    // 1. Fly to the point
+    flyToStore(marker);
+    // 2. Close all other popups and display popup for clicked store
+    createPopUp(marker);
+    // 3. Highlight listing in sidebar (and remove highlight for all other listings)
+    e.stopPropagation();
+    if (activeItem[0]) {
       activeItem[0].classList.remove('active');
     }
-    // Find the index of the store.features that corresponds to the clickedPoint that fired the event listener
-    var selectedFeature = clickedPoint.properties.address;
 
-    for (var i = 0; i < stores.features.length; i ++) {
-      if(stores.features[i].properties.address === selectedFeature) {
-        selectedFeatureIndex = i;
-      }
-    }
-    // Select the correct list item using the found index and add the active class
-    var listing = document.getElementById('listing' + selectedFeatureIndex);
+    var listing = document.getElementById('listing-' + i);
+    console.log(listing);
     listing.classList.add('active');
-  }
+  });
 });
